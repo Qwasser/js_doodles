@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Stepping stone model</title>
+</head>
+
+<style>
+    h2, h3, h4, .step_counter   { font-family: 'Consolas', 'Menlo', 'Deja Vu Sans Mono', 'Bitstream Vera Sans Mono',
+    monospace!important;}
+</style>
+
+<body>
+<div style="width: 504px; margin: 0 auto; text-align: center">
+    <h2>The Stepping Stone Model</h2>
+    <canvas width="501" height="251"></canvas>
+
+    <div>
+        <div class="step_counter" style="float: left"> Step: 0 </div>
+        <div style="float: right">
+            <button id="toggle_button" style="width: 64px"> Run </button>
+            <button id="reset_button"> Reset </button>
+        </div>
+        <div style="clear: both;"></div>
+    </div>
+</div>
+<script>
+    colors = ['#8dd3c7', '#ffffb3', '#bebada', '#fb8072', '#80b1d3', '#fdb462', '#b3de69'];
+    neighbours = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]];
+    size = 10;
+
+    function makeRandomPositiveIntArray(size, max_int) {
+        return Array.apply(null, new Array(size)).map(function(item, index){
+            return Math.floor(Math.random() * max_int);
+        });
+    }
+
+    function SteppingStone(size, color_count) {
+        this.size = size;
+        this.color_count = color_count;
+
+        this.field = Array.apply(null, new Array(size)).map(function(item, index){
+            return makeRandomPositiveIntArray(size, color_count);
+        });
+    }
+
+    SteppingStone.prototype.stepForward = function() {
+        var size = this.size;
+        var new_field = Array.apply(null, new Array(this.size)).map(function () {return new Array(size)});
+        for (var i = 0; i < this.field.length; i++) {
+            for (var j = 0; j < this.field[i].length; j++) {
+                var picked_neighbour = neighbours[Math.floor(Math.random() * 8)];
+                var neigh_x = (i + picked_neighbour[0] + this.size) % this.size;
+                var neigh_y = (j + picked_neighbour[1] + this.size) % this.size;
+                new_field[i][j] = this.field[neigh_x][neigh_y];
+            }
+        }
+        this.field = new_field
+    };
+
+    SteppingStone.prototype.draw = function(canvas_context, block_h, block_w) {
+        for (var i = 0; i < this.field.length; i++) {
+            for (var j = 0; j < this.field[i].length; j++) {
+                var cell_color = this.field[i][j];
+
+                canvas_context.fillStyle = colors[cell_color];
+                canvas_context.fillRect(
+                    block_w * j,
+                    block_h * i,
+                    block_w,
+                    block_h);
+
+                canvas_context.strokeStyle = "black";
+                canvas_context.lineWidth = 2;
+                canvas_context.strokeRect(
+                    block_w * j + 0.5,
+                    block_h * i + 0.5,
+                    block_w,
+                    block_h);
+            }
+        }
+    };
+
+    var steps;
+    var stepping_stone;
+    var canvas = document.querySelector("canvas");
+    var cx = canvas.getContext("2d");
+
+    function setSteps(new_steps) {
+        steps = new_steps;
+        document.querySelector(".step_counter").textContent = "Steps: " + steps;
+    }
+
+    function reset() {
+        setSteps(0);
+        document.querySelector(".step_counter").textContent = "Steps: " + steps;
+        stepping_stone = new SteppingStone(size, colors.length);
+        stepping_stone.draw(cx, (canvas.height - 1) / size, (canvas.width - 1) / size);
+    }
+
+    var animation = null;
+
+    function setAnimation() {
+        return setInterval(function () {
+            cx.clearRect(0, 0, canvas.height, canvas.width);
+            stepping_stone.stepForward();
+            stepping_stone.draw(cx, (canvas.height - 1) / size, (canvas.width - 1) / size);
+            setSteps(steps + 1)
+        }, 100);
+    }
+
+    function toggleAnimation() {
+        if (animation === null){
+            animation = setAnimation();
+            document.querySelector("#toggle_button").innerText = "Pause";
+            return
+        }
+        clearInterval(animation);
+        animation = null;
+        document.querySelector("#toggle_button").innerText = "Run"
+    }
+
+    document.querySelector("#reset_button").onclick = reset;
+    document.querySelector("#toggle_button").onclick = toggleAnimation;
+
+    reset();
+</script>
+
+</body>
+</html>
